@@ -9,7 +9,6 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.kafka.KafkaItemReader;
 import org.springframework.batch.item.kafka.KafkaItemWriter;
 import org.springframework.batch.item.kafka.builder.KafkaItemWriterBuilder;
 import org.springframework.boot.SpringApplication;
@@ -17,6 +16,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.kafka.core.KafkaTemplate;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 @EnableBatchProcessing
 @SpringBootApplication
@@ -54,10 +55,12 @@ public class ProducerApplication {
 
     @Bean
     Step start() {
-
+        AtomicLong id = new AtomicLong();
         ItemReader itemReader = new ItemReader<Customer>() {
             @Override
             public Customer read() throws Exception {
+                if(id.incrementAndGet() < 10_1000)
+                    return new Customer(id.get(), Math.random() > .5 ? "Thee" : "Psar");
                 return null;
             }
         };
