@@ -2,6 +2,9 @@ package com.prashanth.spring.batch.kafka.producer;
 
 import com.prashanth.spring.batch.kafka.model.Customer;
 import lombok.RequiredArgsConstructor;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.LongDeserializer;
+import org.apache.kafka.common.serialization.LongSerializer;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -15,8 +18,13 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 @EnableBatchProcessing
@@ -44,12 +52,7 @@ public class ProducerApplication {
     KafkaItemWriter<Long, Customer> kafkaItemWriter() {
         return new KafkaItemWriterBuilder<Long, Customer>()
                 .kafkaTemplate(kafkaTemplate)
-                .itemKeyMapper(new Converter<Customer, Long>() {
-                    @Override
-                    public Long convert(Customer source) {
-                        return source.getId();
-                    }
-                })
+                .itemKeyMapper(Customer::getId)
                 .build();
     }
 
@@ -58,14 +61,14 @@ public class ProducerApplication {
         AtomicLong id = new AtomicLong();
         ItemReader itemReader = new ItemReader<Customer>() {
             @Override
-            public Customer read() throws Exception {
+            public Customer read() {
                 if(id.incrementAndGet() < 10_1000)
-                    return new Customer(id.get(), Math.random() > .5 ? "Thee" : "Psar");
+                    return new Customer(id.get(), Math.random() > .5 ? "Thee" : "Dsar");
                 return null;
             }
         };
 
-        return this.stepBuilderFactory.get("S1")
+        return this.stepBuilderFactory.get("s1")
                 .<Customer, Customer>chunk(10)
                 .reader(itemReader)
                 .writer(kafkaItemWriter())
